@@ -69,6 +69,11 @@ trait Queue {
                    (implicit reader: Reader[T], ec: ExecutionContext): Future[Option[Message[T]]]
 
 
+  /**
+    * Deletes all messages in the queue
+    * @return
+    */
+  def purge(): Future[Unit]
 
 
   /*
@@ -78,7 +83,7 @@ trait Queue {
   def removePermission(): Future[Unit]
   def changeMessageVisibility(msg: Message[T]): Future[Unit]
   def changeMessageVisibility(msgs: List[Message]): Future[Unit]
-  def purge(): Future[Unit]
+
   */
 
 }
@@ -182,6 +187,20 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
                    (implicit reader: Reader[T], ec: ExecutionContext): Future[Option[Message[T]]] =
     receive(1, wait, timeout, withAttributes, withCustomAttributes).map(_.headOption)
 
+
+
+  
+  def purge(): Future[Unit] = {
+    val request = new PurgeQueueRequest(url)
+    val p = Promise[Unit]()
+
+    val handler = new AsyncHandler[PurgeQueueRequest, Void] {
+      override def onSuccess(req: PurgeQueueRequest, res: Void) = p.success(Unit)
+      override def onError(err: Exception) = p.failure(err)
+    }
+
+    p future
+  }
 }
 
 
