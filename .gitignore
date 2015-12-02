@@ -12,6 +12,17 @@ src_managed/
 project/boot/
 project/plugins/project/
 
+RUNNING_PID
+logs/
+project/*-shim.sbt
+project/project/
+project/target/
+activator*
+
 # Scala-IDE specific
 .scala_dependencies
 .worksheet
+.idea
+
+# test files
+src/main/scala/mindriot/Main.scala
