@@ -44,10 +44,6 @@ trait Message[T] {
 
 
 
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.model.DeleteMessageRequest
-
-
 private[sqs] case class MessageImpl[T](override val id: String,
                                        override val body: T,
                                        override val attributes: MessageAttributes[String],
@@ -55,6 +51,10 @@ private[sqs] case class MessageImpl[T](override val id: String,
                                        queue: Queue,
                                        receiptHandle: String)
                                       (implicit ec: ExecutionContext) extends Message[T] {
+
+
+  import com.amazonaws.handlers.AsyncHandler
+  import com.amazonaws.services.sqs.model.DeleteMessageRequest
 
   override def ack: Future[Unit] = {
     val request = new DeleteMessageRequest(queue.url, receiptHandle)

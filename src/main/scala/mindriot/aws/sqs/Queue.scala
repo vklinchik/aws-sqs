@@ -189,7 +189,7 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
 
 
 
-  
+
   def purge(): Future[Unit] = {
     val request = new PurgeQueueRequest(url)
     val p = Promise[Unit]()
@@ -218,7 +218,7 @@ object Queue {
     val p = Promise[Queue]()
 
     val handler = new AsyncHandler[CreateQueueRequest, CreateQueueResult] {
-      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = apply(res getQueueUrl).map(_.head)
+      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = QueueImpl(res.getQueueUrl, cn)
       override def onError(err: Exception) = p.failure(err)
     }
 

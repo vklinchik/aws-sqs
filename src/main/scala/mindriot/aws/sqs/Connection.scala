@@ -26,6 +26,7 @@ object Connection {
   private[this] val secretKey = config.getString("aws.secretKey")
   private[this] val endPoint = config.getString("aws.endpoint")
 
+
   private[this] val awsCredentials: AWSCredentials = new BasicAWSCredentials(accessKey, secretKey)
 
   def apply(): Connection = {

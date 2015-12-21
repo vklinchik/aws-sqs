@@ -70,5 +70,6 @@ package object sqs {
 
 
   import com.amazonaws.services.sqs.model.MessageAttributeValue
+
   type CustomMessageAttributes = Map[String, MessageAttributeValue]
 }
