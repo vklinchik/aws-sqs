@@ -22,9 +22,9 @@ class QueueSpec extends Specification with BeforeAfterAll {
   val r = new Random()
 
   val timeout = 5 seconds
-  val prefix = s"${r.alphanumeric.take(5).mkString}-XYZ-"
-  val queueName1 = s"${prefix}${r.alphanumeric.take(5).mkString}"
-  val queueName2 =  s"${prefix}${r.alphanumeric.take(5).mkString}"
+  val prefix = s"${randomString(5)}-XYZ-"
+  val queueName1 = s"${prefix}${randomString(5)}"
+  val queueName2 =  s"${prefix}${randomString(5)}"
 
   val msg = "Sample string message"
 
@@ -37,6 +37,8 @@ class QueueSpec extends Specification with BeforeAfterAll {
   def afterAll = {
     cn close
   }
+
+  def randomString(length: Int) = r.alphanumeric.take(length).mkString
 
 
   "Queue" should {
