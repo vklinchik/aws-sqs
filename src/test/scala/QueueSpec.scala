@@ -35,7 +35,6 @@ class QueueSpec extends Specification with BeforeAfterAll {
   }
 
   def afterAll = {
-    println("******** AFTER-ALL *********")
     cn close
   }
 
