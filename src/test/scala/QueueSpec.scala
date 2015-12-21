@@ -1,4 +1,6 @@
 
+import com.amazonaws.auth.{BasicAWSCredentials, AWSCredentials}
+import com.amazonaws.regions.Regions
 import com.typesafe.config.ConfigFactory
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
@@ -17,7 +19,13 @@ class QueueSpec extends Specification with BeforeAfterAll {
 
   sequential
 
-  implicit val cn = Connection()
+  val config = ConfigFactory.load()
+  val accessKey = config.getString("aws.accessKey")
+  val secretKey = config.getString("aws.secretKey")
+  val region = config.getString("aws.region")
+
+  val awsCredentials: AWSCredentials = new BasicAWSCredentials(accessKey, secretKey)
+  implicit val cn = Connection(awsCredentials, Regions.fromName(region))
 
   val r = new Random()
 

@@ -1,12 +1,9 @@
 package mindriot.aws.sqs
 
-import com.amazonaws.auth.AWSCredentials
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.{DefaultAWSCredentialsProviderChain, AWSCredentialsProvider, AWSCredentials}
 import com.amazonaws.regions.{Regions, Region}
 import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSAsync}
 
-
-import scala.concurrent.{Future, Promise}
 
 
 trait Connection {
@@ -19,21 +16,16 @@ trait Connection {
 
 object Connection {
 
-  import com.typesafe.config.{ConfigFactory}
-
-  private[this] val config = ConfigFactory.load()
-  private[this] val accessKey = config.getString("aws.accessKey")
-  private[this] val secretKey = config.getString("aws.secretKey")
-  private[this] val endPoint = config.getString("aws.endpoint")
+  def apply(provider: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
+            regions: Regions = Regions.DEFAULT_REGION): Connection =
+    apply(provider getCredentials, regions)
 
 
-  private[this] val awsCredentials: AWSCredentials = new BasicAWSCredentials(accessKey, secretKey)
+  def apply(credentials: AWSCredentials,
+            regions: Regions): Connection = {
 
-  def apply(): Connection = {
-    val sqs: AmazonSQSAsync = new AmazonSQSAsyncClient(awsCredentials)
-    sqs.setEndpoint(endPoint)
-    val usWest = Region.getRegion(Regions.US_WEST_2)
-    sqs.setRegion(usWest)
+    val sqs: AmazonSQSAsync = new AmazonSQSAsyncClient(credentials)
+    sqs.setRegion(Region.getRegion(regions))
 
     new Connection {
       override val client: AmazonSQSAsync = sqs

@@ -26,3 +26,7 @@ activator*
 
 # test files
 src/main/scala/mindriot/Main.scala
+
+# resources
+src/main/resources/*
+src/test/resources/*

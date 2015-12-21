@@ -266,7 +266,7 @@ object Queue {
   }
 
   /**
-    * Finds queue object based on the url
+    * Returns queue object based on the url
     * @param url Queue url
     * @param cn
     * @param ec
