@@ -13,7 +13,7 @@ trait Reader[T]  extends Format[T] {
   def read(value: Value): T
 }
 
-object StringFormatter {
+object StringFormat {
 
   object StringWriter extends Writer[String] {
     override def write(obj: String) = obj
@@ -29,7 +29,7 @@ object StringFormatter {
 
 
 
-object BinaryFormatter {
+object Base64Format {
   import java.util.Base64.{getEncoder, getDecoder}
 
   object BinaryReader extends Reader[Array[Byte]] {

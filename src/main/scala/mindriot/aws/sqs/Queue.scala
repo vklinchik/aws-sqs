@@ -76,11 +76,15 @@ trait Queue {
   def purge(): Future[Unit]
 
 
+  def addPermission(label: String, accounts: Seq[String] = Seq("*"), permissions: Seq[Permission] = Seq(Permission.All)): Future[Unit]
+
+  def removePermission(label: String): Future[Unit]
+
+
   /*
 
 
-  def addPermission(): Future[Unit]
-  def removePermission(): Future[Unit]
+
   def changeMessageVisibility(msg: Message[T]): Future[Unit]
   def changeMessageVisibility(msgs: List[Message]): Future[Unit]
 
@@ -199,8 +203,42 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
       override def onError(err: Exception) = p.failure(err)
     }
 
+    client.purgeQueueAsync(request, handler)
     p future
   }
+
+
+  def addPermission(label: String, accounts: Seq[String] = Seq("*"), permissions: Seq[Permission] = Seq(Permission.All)): Future[Unit] = {
+
+    val request = new AddPermissionRequest()
+      .withQueueUrl(url)
+      .withLabel(label)
+      .withAWSAccountIds(accounts)
+      .withActions(permissions.map(_.name))
+
+    val p = Promise[Unit]
+
+    val handler = new AsyncHandler[AddPermissionRequest, Void] {
+      override def onSuccess(req: AddPermissionRequest, res: Void) = p.success(Unit)
+      override def onError(err: Exception) = p.failure(err)
+    }
+    client.addPermissionAsync(request, handler)
+    p future
+  }
+
+
+  def removePermission(label: String): Future[Unit] = {
+    val request = new RemovePermissionRequest(url, label)
+    val p = Promise[Unit]
+
+    val handler = new AsyncHandler[RemovePermissionRequest, Void] {
+      override def onSuccess(req: RemovePermissionRequest, res: Void) = p.success(Unit)
+      override def onError(err: Exception) = p.failure(err)
+    }
+    client.removePermissionAsync(request, handler)
+    p future
+  }
+
 }
 
 

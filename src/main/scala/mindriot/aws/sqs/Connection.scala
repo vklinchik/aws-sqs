@@ -21,6 +21,7 @@ object Connection {
     apply(provider getCredentials, regions)
 
 
+
   def apply(credentials: AWSCredentials,
             regions: Regions): Connection = {
 

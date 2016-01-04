@@ -72,4 +72,31 @@ package object sqs {
   import com.amazonaws.services.sqs.model.MessageAttributeValue
 
   type CustomMessageAttributes = Map[String, MessageAttributeValue]
+
+
+  /**
+    * Queue Permissions
+    * @param name
+    */
+  sealed abstract class Permission(val name: String) {
+    override def toString = name
+  }
+
+  object Permission {
+    val All = new Permission("*"){}
+
+    val ReceiveMessage = new Permission("ReceiveMessage") {}
+    val SendMessage = new Permission("SendMessage"){}
+    val DeleteMessage = new Permission("DeleteMesssage"){}
+    val ChangeMessageVisibility = new Permission("ChangeMessageVisibility"){}
+    val GetQueueAttributes = new Permission("GetQueueAttributes"){}
+    val GetQueueUrl = new Permission("GetQueueUrl") {}
+    val PurgeQueue = new Permission("PurgeQueue") {}
+
+    val values = List(All, ReceiveMessage, SendMessage, DeleteMessage, ChangeMessageVisibility,
+      GetQueueAttributes, GetQueueUrl, PurgeQueue)
+
+    def apply(name: String): Option[Permission] = values.find(_.name == name)
+    def unapply(p: Permission): Option[String] = Some(p.name)
+  }
 }
