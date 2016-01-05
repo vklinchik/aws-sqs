@@ -63,7 +63,7 @@ trait Queue {
     * @tparam T
     * @return
     */
-  def receiveOne[T](wait: Option[Int] = None, timeout: Option[Int],
+  def receiveOne[T](wait: Option[Int] = None, timeout: Option[Int] = None,
                     withAttributes: Option[Seq[AttributeType]] = None,
                     withCustomAttributes: Option[Seq[String]] = None)
                    (implicit reader: Reader[T], ec: ExecutionContext): Future[Option[Message[T]]]
@@ -81,14 +81,15 @@ trait Queue {
   def removePermission(label: String): Future[Unit]
 
 
-  /*
+  /**
+    * Changes the visibility timeout of a specified message in a queue to a new value (seconds)
+    * @param msg
+    * @param timeout New timeout value in seconds
+    * @tparam T
+    * @return
+    */
+  def changeMessageVisibility[T](msg: Message[T], timeout: Int): Future[Unit]
 
-
-
-  def changeMessageVisibility(msg: Message[T]): Future[Unit]
-  def changeMessageVisibility(msgs: List[Message]): Future[Unit]
-
-  */
 
 }
 
@@ -185,7 +186,7 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
   }
 
 
-  def receiveOne[T](wait: Option[Int] = None, timeout: Option[Int],
+  def receiveOne[T](wait: Option[Int] = None, timeout: Option[Int] = None,
                     withAttributes: Option[Seq[AttributeType]] = None,
                     withCustomAttributes: Option[Seq[String]] = None)
                    (implicit reader: Reader[T], ec: ExecutionContext): Future[Option[Message[T]]] =
@@ -236,6 +237,26 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
       override def onError(err: Exception) = p.failure(err)
     }
     client.removePermissionAsync(request, handler)
+    p future
+  }
+
+
+  def changeMessageVisibility[T](msg: Message[T], timeout: Int): Future[Unit] = {
+
+    val m = msg.asInstanceOf[MessageImpl[T]]
+
+    val request = new ChangeMessageVisibilityRequest()
+      .withQueueUrl(url)
+      .withReceiptHandle(m.receiptHandle)
+      .withVisibilityTimeout(timeout)
+
+    val p = Promise[Unit]
+    val handler = new AsyncHandler[ChangeMessageVisibilityRequest, Void] {
+      override def onSuccess(req: ChangeMessageVisibilityRequest, res: Void) = p.success(Unit)
+      override def onError(err: Exception) = p.failure(err)
+    }
+
+    client.changeMessageVisibilityAsync(request, handler)
     p future
   }
 

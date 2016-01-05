@@ -1,6 +1,7 @@
 
 import com.amazonaws.auth.{BasicAWSCredentials, AWSCredentials}
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.sqs.model.MessageAttributeValue
 import com.typesafe.config.ConfigFactory
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
@@ -84,18 +85,21 @@ class QueueSpec extends Specification with BeforeAfterAll {
     }
 
 
-    "send message" in { implicit ee: ExecutionEnv =>
+    "send message with attributes" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
-      queue.send(msg) must be_==(()).await(0, timeout)
+      queue.send(msg, Map("One" -> new MessageAttributeValue().withDataType("String").withStringValue("1"))) must be_==(()).await(0, timeout)
     }
 
 
-    "receive message" in { implicit ee: ExecutionEnv =>
+    "receive message with attributes" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
-      queue.receive().map { lst =>
+      queue.receive(withAttributes = Some(Seq(MessageAttributeType.ApproximateReceiveCount)),
+                    withCustomAttributes = Some(Seq("One"))).map { lst =>
         val m = lst.head
         m.nack
         m.body must be_==(msg)
+        m.messageAttributes("One").getStringValue must equalTo("1")
+        m.attributes(MessageAttributeType.ApproximateReceiveCount) must be_==("1")
       }.await(0, timeout)
     }
 
@@ -108,7 +112,7 @@ class QueueSpec extends Specification with BeforeAfterAll {
     }
 
 
-    "add/remove permissions" in {implicit ee: ExecutionEnv =>
+    "add/remove permissions" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
 
       // add send recieve and verify
@@ -131,6 +135,18 @@ class QueueSpec extends Specification with BeforeAfterAll {
 
     }
 
+    "change visibility timeout" in { implicit ee: ExecutionEnv =>
+      val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
+
+      Await.result(queue.send(msg), 2 seconds)
+      val optMsg = Await.result(queue.receiveOne(timeout = Some(1)), 2 seconds)
+      //change visibility time out to 30s, sleep through original timeout and check if message is visible.
+      //(without change to visiblity timeout test case will fail)
+      optMsg.foreach(queue.changeMessageVisibility(_, 30))
+      Thread.sleep(2000)
+      queue.receiveOne().map(_ must beNone).await(0, timeout)
+
+    }
 
     "delete queues" in { implicit ee: ExecutionEnv =>
       Queue.list(prefix).map{

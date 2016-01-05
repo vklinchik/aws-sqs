@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "joda-time"         %  "joda-time"                     % "2.8.2",
   "org.specs2"        %% "specs2-core"                   % "3.6.6"        % "test",
   "org.scalatest"     %% "scalatest"                     % "2.2.4"        % "test",
-  "com.amazonaws"     %  "aws-java-sdk"                  % "1.10.0",
+  "com.amazonaws"     %  "aws-java-sdk"                  % "1.10.44",
   "ch.qos.logback"    %  "logback-core"                  % logVersion,
   "ch.qos.logback"    %  "logback-classic"               % logVersion
 )
