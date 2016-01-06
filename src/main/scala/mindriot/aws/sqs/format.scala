@@ -32,15 +32,15 @@ object StringFormat {
 object Base64Format {
   import java.util.Base64.{getEncoder, getDecoder}
 
-  object BinaryReader extends Reader[Array[Byte]] {
+  object Base64Reader extends Reader[Array[Byte]] {
     override def read(value: Value): Array[Byte] = getEncoder.encode(value.getBytes)
   }
 
-  object BinaryWriter extends Writer[Array[Byte]] {
+  object Base64Writer extends Writer[Array[Byte]] {
     override def write(obj: Array[Byte]) = new String(getDecoder.decode(obj))
   }
 
-  implicit val reader = BinaryReader
-  implicit val writer = BinaryWriter
+  implicit val reader = Base64Reader
+  implicit val writer = Base64Writer
 
 }

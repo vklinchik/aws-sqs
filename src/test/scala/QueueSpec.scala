@@ -20,6 +20,13 @@ class QueueSpec extends Specification with BeforeAfterAll {
 
   sequential
 
+  /**
+    * Sample application.conf configuration
+    * aws.accessKey = "TEST_ACCESS_KEY"
+    * aws.secretKey = "TEST_SECRET_KEY"
+    * aws.region = "us-west-2"
+    * aws.account = "TEST_ACCOUNT_NUMBER"
+    */
   val config = ConfigFactory.load()
   val accessKey = config.getString("aws.accessKey")
   val secretKey = config.getString("aws.secretKey")
@@ -72,7 +79,7 @@ class QueueSpec extends Specification with BeforeAfterAll {
     }
 
 
-    "list attributes" in { implicit ee: ExecutionEnv =>
+    "list queue attributes" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
 
       queue.attributes().map{ attr =>
@@ -149,13 +156,14 @@ class QueueSpec extends Specification with BeforeAfterAll {
     }
 
     "delete queues" in { implicit ee: ExecutionEnv =>
-      Queue.list(prefix).map{
+      Queue.list(prefix).map {
         _.map { q =>
           println(s"Deleting '${q.url}'")
           Queue.delete(q.url) must be_==(()).await(0, timeout)
         }
-      } await
+      } await(0, timeout)
     }
+
   }
 
 
