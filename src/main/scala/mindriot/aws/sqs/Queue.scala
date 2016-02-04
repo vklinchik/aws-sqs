@@ -277,7 +277,7 @@ object Queue {
     val p = Promise[Queue]()
 
     val handler = new AsyncHandler[CreateQueueRequest, CreateQueueResult] {
-      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = QueueImpl(res.getQueueUrl, cn)
+      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = p.success(QueueImpl(res.getQueueUrl, cn))
       override def onError(err: Exception) = p.failure(err)
     }
 

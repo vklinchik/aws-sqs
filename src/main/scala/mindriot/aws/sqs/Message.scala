@@ -43,7 +43,6 @@ trait Message[T] {
 
 
 
-
 private[sqs] case class MessageImpl[T](override val id: String,
                                        override val body: T,
                                        override val attributes: MessageAttributes[String],

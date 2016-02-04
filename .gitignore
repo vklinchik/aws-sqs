@@ -26,6 +26,7 @@ activator*
 
 # test files
 src/main/scala/mindriot/Main.scala
+src/main/scala/mindriot/MainBalanceQueue.scala
 
 # resources
 src/main/resources/*

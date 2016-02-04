@@ -62,16 +62,8 @@ class QueueSpec extends Specification with BeforeAfterAll {
 
 
     "create queues" in { implicit ee: ExecutionEnv =>
-      //Queue.create(queueName1).map(_.url.length  must beGreaterThan(5)).await(0, timeout)
-      //Queue.create(queueName2).map(_.url.length  must beGreaterThan(5)).await(0, timeout)
-
-      Queue.create(queueName1)
-      Queue.create(queueName2)
-      Thread.sleep(2000)
-
-      //assume success, if failure all follow up tests will fail.
-      success
-
+      Queue.create(queueName1).map(_.url.length  must beGreaterThan(5)).await(0, timeout)
+      Queue.create(queueName2).map(_.url.length  must beGreaterThan(5)).await(0, timeout)
     }
 
     "list queues" in { implicit ee: ExecutionEnv =>
