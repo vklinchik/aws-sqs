@@ -87,19 +87,37 @@ class QueueSpec extends Specification with BeforeAfterAll {
     "send message with attributes" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
       queue.send(msg, Map("One" -> new MessageAttributeValue().withDataType("String").withStringValue("1"))) must be_==(()).await(0, timeout)
+      queue.send(msg, Map("Two" -> new MessageAttributeValue().withDataType("String").withStringValue("2"))) must be_==(()).await(0, timeout)
     }
 
 
     "receive message with attributes" in { implicit ee: ExecutionEnv =>
       val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
-      queue.receive(withAttributes = Some(Seq(MessageAttributeType.ApproximateReceiveCount)),
-                    withCustomAttributes = Some(Seq("One"))).map { lst =>
-        val m = lst.head
-        m.nack
-        m.body must be_==(msg)
-        m.messageAttributes("One").getStringValue must equalTo("1")
-        m.attributes(MessageAttributeType.ApproximateReceiveCount) must be_==("1")
-      }.await(0, timeout)
+      queue.receive(maxMessages = 10,
+                    withAttributes = Some(Seq(MessageAttributeType.ApproximateReceiveCount)),
+                    withCustomAttributes = Some(Seq("One")))
+        .map { lst =>
+          val m = lst.head
+          m.nack
+          m.body must be_==(msg)
+          m.messageAttributes("One").getStringValue must equalTo("1")
+          m.attributes(MessageAttributeType.ApproximateReceiveCount) must be_==("1")
+        }
+        .await(0, timeout)
+    }
+
+
+    "receive message with attributes synchronously" in { implicit ee: ExecutionEnv =>
+      val queue = Await.result(Queue.list(queueName1).map(_.head), 2 seconds)
+      val lst  = queue.receiveSync(maxMessages = 10,
+                                   withAttributes = Some(Seq(MessageAttributeType.ApproximateReceiveCount)),
+                                   withCustomAttributes = Some(Seq("Two")))
+
+      val m = lst.head
+      m.nack
+      m.body must be_==(msg)
+      m.messageAttributes("Two").getStringValue must equalTo("2")
+      m.attributes(MessageAttributeType.ApproximateReceiveCount) must be_==("1")
     }
 
 

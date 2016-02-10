@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory
 import mindriot.aws.sqs.{Reader, AttributeType, Queue, Message}
 
 abstract class QueueListener[T](maxMessages: Int,
-                                wait: Option[Int] = None,
-                                timeout: Option[Int] = None,
-                                withAttributes: Option[Seq[AttributeType]] = None,
-                                withCustomAttributes: Option[Seq[String]] = None,
-                                timeoutOffset: Int = 0)
+                                wait: Option[Int],
+                                timeout: Option[Int],
+                                withAttributes: Option[Seq[AttributeType]],
+                                withCustomAttributes: Option[Seq[String]],
+                                timeoutOffset: Int)
                                (implicit queue: Queue, system: ActorSystem, reader: Reader[T]) {
 
 
@@ -32,8 +32,10 @@ abstract class QueueListener[T](maxMessages: Int,
 
   def inputBufferSize = 2
 
-  val matSettings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
+  val matSettings = ActorMaterializerSettings(system)
+    .withSupervisionStrategy(decider)
     .withInputBuffer(initialSize = inputBufferSize, maxSize = inputBufferSize)
+
   implicit val materializer = ActorMaterializer(matSettings).withNamePrefix("QueueListenerMat")
 
 
@@ -41,9 +43,10 @@ abstract class QueueListener[T](maxMessages: Int,
     * Create publisher and attach to soource
     */
   protected val source: Source[Message[T], ActorRef] =
-    Source.actorPublisher[Message[T]](Props(classOf[QueueListenerActor[T]], maxMessages, wait, timeout, withAttributes, withCustomAttributes, timeoutOffset, queue, system, reader))
-                              .named("QueueListeningActor")
-                              .withAttributes(ActorAttributes.supervisionStrategy(decider))
+    Source
+      .actorPublisher[Message[T]](Props(classOf[QueueListenerActor[T]], maxMessages, wait, timeout, withAttributes, withCustomAttributes, timeoutOffset, queue, system, reader))
+      .named("QueueListeningActor")
+      //.withAttributes(ActorAttributes.supervisionStrategy(decider)) // already defined in materializer settings
 
 
   /**

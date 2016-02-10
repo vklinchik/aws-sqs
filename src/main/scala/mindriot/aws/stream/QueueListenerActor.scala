@@ -5,6 +5,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 import com.amazonaws.{AmazonServiceException, AmazonClientException}
 import org.joda.time.{Instant, Interval}
+import scala.concurrent.Await
 import scala.util.{Success, Failure}
 import scala.collection.mutable.{Queue => MQueue}
 import scala.concurrent.duration._
@@ -104,19 +105,17 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
   /**
     * Load message into internal queue only if the queue is empty and visibility timeout is set
     */
-  def getMessages {
+  def getMessages = {
 
-    def loadMessages {
+    def loadMessages = {
       val cnt = msgQueue.length
-
       queue.receive(maxMessages, wait, timeout, withAttributes, withCustomAttributes).onComplete {
         case Success(lst) => {
           msgQueue ++= lst
           log.debug(
             s"""Received ${msgQueue.length - cnt} message(s).
                 |Total message available for processing = ${msgQueue.length}.
-                |Total processed message count(lifecycle) = ${
-              processedMsgCount}""".stripMargin)
+                |Total processed message count(lifecycle) = ${processedMsgCount}""".stripMargin)
         }
         case Failure(e) =>
           e match {
@@ -124,14 +123,26 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
             case ace: AmazonClientException => handleClientException(ace)
           }
       }
+
     }
 
-    if( msgQueue.length == 0 && visibilityTimeout >= 0 ) loadMessages
+    def loadMessages2 = {
+      val cnt = msgQueue.length
+      val lst = queue.receiveSync(maxMessages, wait, timeout, withAttributes, withCustomAttributes)
+      msgQueue ++= lst
+        log.debug(
+            s"""Received ${msgQueue.length - cnt} message(s).
+                |Total message available for processing = ${msgQueue.length}.
+                |Total processed message count(lifecycle) = ${processedMsgCount}""".stripMargin)
+    }
+
+    if( msgQueue.length == 0 && visibilityTimeout >= 0 ) loadMessages2
 
   }
 
   /**
     * Calculates approximate duration from a given instant
+    *
     * @param start
     * @return
     */
@@ -166,6 +177,7 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
 
   /**
     * Request made it to amazon, but was rejected
+    *
     * @param e
     */
   def handleServiceException(e: AmazonServiceException): Unit = {
@@ -183,6 +195,7 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
 
   /**
     * Client encountered problem while trying to communicate with SQS (network?)
+    *
     * @param e
     */
   def handleClientException(e: AmazonClientException) = {

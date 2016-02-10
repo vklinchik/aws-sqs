@@ -70,6 +70,23 @@ trait Queue {
 
 
   /**
+    * Same as receive, but synchronous
+    * @param maxMessages
+    * @param wait
+    * @param timeout
+    * @param withAttributes
+    * @param withCustomAttributes
+    * @param reader
+    * @param ec
+    * @tparam T
+    * @return
+    */
+  def receiveSync[T](maxMessages: Int = 1, wait: Option[Int] = None, timeout: Option[Int] = None,
+                 withAttributes: Option[Seq[AttributeType]] = None,
+                 withCustomAttributes: Option[Seq[String]] = None)
+                (implicit reader: Reader[T], ec: ExecutionContext): List[Message[T]]
+
+  /**
     * Deletes all messages in the queue
     * @return
     */
@@ -155,13 +172,7 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
                  withCustomAttributes: Option[Seq[String]] = None)
                 (implicit reader: Reader[T], ec: ExecutionContext): Future[List[Message[T]]] = {
 
-    val request = new ReceiveMessageRequest(url).withMaxNumberOfMessages(maxMessages)
-    wait.foreach(request.withWaitTimeSeconds(_))
-    timeout.foreach(request.withVisibilityTimeout(_))
-    withAttributes.foreach(seq => request.setAttributeNames(seq.map(_.name)))
-    withCustomAttributes.foreach(request.setMessageAttributeNames(_))
-
-
+    val request = configureReceiveRequest(maxMessages, wait, timeout, withAttributes, withCustomAttributes)
     val p: Promise[List[Message[T]]] = Promise()
 
     val handler = new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
@@ -193,6 +204,40 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
     receive(1, wait, timeout, withAttributes, withCustomAttributes).map(_.headOption)
 
 
+
+
+  def receiveSync[T](maxMessages: Int = 1, wait: Option[Int] = None, timeout: Option[Int] = None,
+                 withAttributes: Option[Seq[AttributeType]] = None,
+                 withCustomAttributes: Option[Seq[String]] = None)
+                (implicit reader: Reader[T], ec: ExecutionContext): List[Message[T]] = {
+
+
+    val request = configureReceiveRequest(maxMessages, wait, timeout, withAttributes, withCustomAttributes)
+
+    val res = client.receiveMessage(request)
+    res.getMessages.asScala.foldRight(List[Message[T]]()){ (msg, l) =>
+      MessageImpl(msg.getMessageId,
+        reader.read(msg.getBody),
+        msg.getAttributes.toMap.map( kv => (stringToMessageAttributeType(kv._1), kv._2)),
+        msg.getMessageAttributes.asScala.toMap, //CustomMessageAttributes
+        self,
+        msg.getReceiptHandle) :: l
+    }
+
+  }
+
+
+  private def configureReceiveRequest(maxMessages: Int, wait: Option[Int], timeout: Option[Int],
+                                      withAttributes: Option[Seq[AttributeType]],
+                                      withCustomAttributes: Option[Seq[String]]) = {
+
+    val request = new ReceiveMessageRequest(url).withMaxNumberOfMessages(maxMessages)
+    wait.foreach(request.withWaitTimeSeconds(_))
+    timeout.foreach(request.withVisibilityTimeout(_))
+    withAttributes.foreach(seq => request.setAttributeNames(seq.map(_.name)))
+    withCustomAttributes.foreach(request.setMessageAttributeNames(_))
+    request
+  }
 
 
   def purge(): Future[Unit] = {
