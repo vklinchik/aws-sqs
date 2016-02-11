@@ -109,25 +109,6 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
 
     def loadMessages = {
       val cnt = msgQueue.length
-      queue.receive(maxMessages, wait, timeout, withAttributes, withCustomAttributes).onComplete {
-        case Success(lst) => {
-          msgQueue ++= lst
-          log.debug(
-            s"""Received ${msgQueue.length - cnt} message(s).
-                |Total message available for processing = ${msgQueue.length}.
-                |Total processed message count(lifecycle) = ${processedMsgCount}""".stripMargin)
-        }
-        case Failure(e) =>
-          e match {
-            case ase: AmazonServiceException => handleServiceException(ase)
-            case ace: AmazonClientException => handleClientException(ace)
-          }
-      }
-
-    }
-
-    def loadMessages2 = {
-      val cnt = msgQueue.length
       val lst = queue.receiveSync(maxMessages, wait, timeout, withAttributes, withCustomAttributes)
       msgQueue ++= lst
         log.debug(
@@ -136,7 +117,7 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
                 |Total processed message count(lifecycle) = ${processedMsgCount}""".stripMargin)
     }
 
-    if( msgQueue.length == 0 && visibilityTimeout >= 0 ) loadMessages2
+    if( msgQueue.length == 0 && visibilityTimeout >= 0 ) loadMessages
 
   }
 
