@@ -29,11 +29,11 @@ object BalanceQueueListener {
 
 class BalanceQueueListener[T] (workerCount: Int,
                                maxMessages: Int,
-                               wait: Option[Int] = None,
-                               timeout: Option[Int] = None,
-                               withAttributes: Option[Seq[AttributeType]] = None,
-                               withCustomAttributes: Option[Seq[String]] = None,
-                               timeoutOffset: Int = 0)
+                               wait: Option[Int],
+                               timeout: Option[Int],
+                               withAttributes: Option[Seq[AttributeType]],
+                               withCustomAttributes: Option[Seq[String]],
+                               timeoutOffset: Int)
                               (doWork: Message[T] => Unit)
                               (implicit queue: Queue, system: ActorSystem, reader: Reader[T])
     extends QueueListener[T](maxMessages, wait, timeout, withAttributes, withCustomAttributes, timeoutOffset)(queue, system, reader) {

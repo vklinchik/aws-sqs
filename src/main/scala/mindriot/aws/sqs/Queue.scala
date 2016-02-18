@@ -110,6 +110,92 @@ trait Queue {
 
 }
 
+
+
+object Queue {
+
+  /**
+    * Create queue with a specified name
+    * @param queueName Name of the queue
+    * @param cn
+    * @return
+    */
+  def create(queueName: String)(implicit cn: Connection, ec: ExecutionContext): Future[Queue] = {
+    val request = new CreateQueueRequest().withQueueName(queueName)
+    val p = Promise[Queue]()
+
+    val handler = new AsyncHandler[CreateQueueRequest, CreateQueueResult] {
+      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = p.success(QueueImpl(res.getQueueUrl, cn))
+      override def onError(err: Exception) = p.failure(err)
+    }
+
+    cn.client.createQueueAsync(request, handler)
+    p future
+  }
+
+  /**
+    * Delete queue specified by url parameter
+    * @param url URL of the queue
+    * @param cn implicit connection
+    * @return Unit
+    */
+  def delete(url: String)(implicit cn: Connection): Future[Unit] = {
+    val request = new DeleteQueueRequest().withQueueUrl(url)
+    val p = Promise[Unit]()
+
+    cn.client.deleteQueueAsync(request, new AsyncHandler[DeleteQueueRequest, Void] {
+      override def onSuccess(request: DeleteQueueRequest, result: Void) = p.success(Unit)
+      override def onError(err: Exception) = p.failure(err)
+    })
+
+    p future
+  }
+
+  /**
+    * Lists all the queues with specified name prefix.
+    * Leave prefix empty to list all queues, or specified exact name to locate queue based on name.
+    * @param namePrefix
+    * @param cn
+    * @return
+    */
+  def list(namePrefix: String = "")(implicit cn: Connection): Future[List[Queue]] = {
+    val request = new ListQueuesRequest().withQueueNamePrefix(namePrefix)
+    val p = Promise[List[Queue]]()
+
+    cn.client.listQueuesAsync(request, new AsyncHandler[ListQueuesRequest, ListQueuesResult] {
+      override def onSuccess(req: ListQueuesRequest, res: ListQueuesResult) =
+        p.success(res.getQueueUrls.toList.map(QueueImpl(_, cn)))
+
+      override def onError(err: Exception) = p.failure(err)
+    })
+
+    p future
+  }
+
+  /**
+    * Returns queue object based on the url
+    * @param url Queue url
+    * @param cn
+    * @param ec
+    * @return
+    */
+  def apply(url: String)(implicit cn: Connection, ec: ExecutionContext): Future[Option[Queue]] = {
+    val name = url.split("/").last
+    list(name).map(_.filter(_.url == url).headOption)
+  }
+
+
+}
+
+
+
+
+
+// ********************** IMPLEMENTATION DETAILS *************************
+
+
+
+
 private[sqs] case class QueueImpl(override val url: String, override val connection: Connection) extends Queue {
 
   self =>
@@ -309,77 +395,4 @@ private[sqs] case class QueueImpl(override val url: String, override val connect
 
 
 
-object Queue {
 
-  /**
-    * Create queue with a specified name
-    * @param queueName Name of the queue
-    * @param cn
-    * @return
-    */
-  def create(queueName: String)(implicit cn: Connection, ec: ExecutionContext): Future[Queue] = {
-    val request = new CreateQueueRequest().withQueueName(queueName)
-    val p = Promise[Queue]()
-
-    val handler = new AsyncHandler[CreateQueueRequest, CreateQueueResult] {
-      override def onSuccess(req: CreateQueueRequest, res: CreateQueueResult) = p.success(QueueImpl(res.getQueueUrl, cn))
-      override def onError(err: Exception) = p.failure(err)
-    }
-
-    cn.client.createQueueAsync(request, handler)
-    p future
-  }
-
-  /**
-    * Delete queue specified by url parameter
-    * @param url URL of the queue
-    * @param cn implicit connection
-    * @return Unit
-    */
-  def delete(url: String)(implicit cn: Connection): Future[Unit] = {
-    val request = new DeleteQueueRequest().withQueueUrl(url)
-    val p = Promise[Unit]()
-
-    cn.client.deleteQueueAsync(request, new AsyncHandler[DeleteQueueRequest, Void] {
-      override def onSuccess(request: DeleteQueueRequest, result: Void) = p.success(Unit)
-      override def onError(err: Exception) = p.failure(err)
-    })
-
-    p future
-  }
-
-  /**
-    * Lists all the queues with specified name prefix.
-    * Leave prefix empty to list all queues, or specified exact name to locate queue based on name.
-    * @param namePrefix
-    * @param cn
-    * @return
-    */
-  def list(namePrefix: String = "")(implicit cn: Connection): Future[List[Queue]] = {
-    val request = new ListQueuesRequest().withQueueNamePrefix(namePrefix)
-    val p = Promise[List[Queue]]()
-
-    cn.client.listQueuesAsync(request, new AsyncHandler[ListQueuesRequest, ListQueuesResult] {
-      override def onSuccess(req: ListQueuesRequest, res: ListQueuesResult) =
-        p.success(res.getQueueUrls.toList.map(QueueImpl(_, cn)))
-
-      override def onError(err: Exception) = p.failure(err)
-    })
-
-    p future
-  }
-
-  /**
-    * Returns queue object based on the url
-    * @param url Queue url
-    * @param cn
-    * @param ec
-    * @return
-    */
-  def apply(url: String)(implicit cn: Connection, ec: ExecutionContext): Future[Option[Queue]] = {
-    val name = url.split("/").last
-    list(name).map(_.filter(_.url == url).headOption)
-  }
-
-
-}

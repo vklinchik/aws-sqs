@@ -9,9 +9,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
-/**
-  * Created by admin on 2/18/16.
-  */
+
 object BroadcastQueueListener {
 
   def apply[T](maxMessages: Int,
@@ -28,11 +26,11 @@ object BroadcastQueueListener {
 
 
 class BroadcastQueueListener[T](maxMessages: Int,
-                                wait: Option[Int] = None,
-                                timeout: Option[Int] = None,
-                                withAttributes: Option[Seq[AttributeType]] = None,
-                                withCustomAttributes: Option[Seq[String]] = None,
-                                timeoutOffset: Int = 0)
+                                wait: Option[Int],
+                                timeout: Option[Int],
+                                withAttributes: Option[Seq[AttributeType]],
+                                withCustomAttributes: Option[Seq[String]],
+                                timeoutOffset: Int)
                                (workers: List[Message[T] => Unit])
                                (implicit queue: Queue, system: ActorSystem, reader: Reader[T])
   extends QueueListener[T](maxMessages, wait, timeout, withAttributes, withCustomAttributes, timeoutOffset)(queue, system, reader) {
