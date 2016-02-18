@@ -5,7 +5,6 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 import com.amazonaws.{AmazonServiceException, AmazonClientException}
 import org.joda.time.{Instant, Interval}
-import scala.concurrent.Await
 import scala.util.{Success, Failure}
 import scala.collection.mutable.{Queue => MQueue}
 import scala.concurrent.duration._
@@ -146,15 +145,16 @@ private[stream] class QueueListenerActor[T](maxMessages: Int,
         visibilityTimeout = attrs(QueueAttributeType.VisibilityTimeout).toInt - timeoutOffset
         log.info(s"VisibilityTimeout with timeoutOffset is set to ${visibilityTimeout}s for Queue '${queue.url}'")
       }
-      case Failure(e) => {
-        e match {
-          case ase: AmazonServiceException => handleServiceException(ase)
-          case ace: AmazonClientException =>  handleClientException(ace)
+      case Failure(t) => {
+        t match {
+          case se: AmazonServiceException => handleServiceException(se)
+          case ce: AmazonClientException =>  handleClientException(ce)
         }
       }
     }
 
   }
+
 
   /**
     * Request made it to amazon, but was rejected
