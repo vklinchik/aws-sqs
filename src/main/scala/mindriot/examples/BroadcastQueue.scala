@@ -44,8 +44,11 @@ object BroadcastQueue {
 
     println(s"Creating queue: $queueName")
 
+    var url: String = ""
+
     Queue.create(queueName) onSuccess {
       case q => {
+        url = q.url
         println(s"Queue created, URL: ${q.url}")
         loadQueue(q, 10)
         configureQueueListener(q)
@@ -58,6 +61,10 @@ object BroadcastQueue {
     println("Hit any key to terminate.....")
     val input = StdIn.readLine
     println("exiting....")
+    // cleanup and get out
+    Queue.delete(url)
+    Thread.sleep(1000)
+
     system.terminate
     System.exit(0)
   }
